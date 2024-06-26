@@ -87,7 +87,7 @@ func main() {
 	startTime = time.Now()
 
 	// Number of CPU cores to use
-	numCPU = runtime.NumCPU() /2
+	numCPU = runtime.NumCPU() 
 	fmt.Printf("CPUs detectados: %s\n", green(numCPU))
 	runtime.GOMAXPROCS(numCPU * 2)
 
@@ -244,7 +244,7 @@ func startProcessing(privKeyMin, privKeyMax *big.Int) {
 	stopChan = make(chan bool)
 
 	// Start worker goroutines
-	for i := 0; i < numCPU*2; i++ {
+	for i := 0; i < numCPU*3; i++ {
 		wg.Add(1)
 		go worker()
 	}

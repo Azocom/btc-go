@@ -8,25 +8,39 @@
 </head>
 
 <body>
-    <div id="data-container">
-        <!-- Aqui será mostrado o resultado da API -->
-    </div>
+
+    1<div id="data-container-1"></div>
+    <hr>
+    2<div id="data-container-2"></div>
+    <hr>
+    3<div id="data-container-3"></div>
+    <hr>
+    4<div id="data-container-4"></div>
 
     <script>
-        // Função para fazer a requisição à API e processar os dados
-        function fetchData() {
-            fetch('http://localhost:8090/status')
+
+
+        function fetchData(ip, id) {
+            fetch('http://' + ip + ':8090/status')
                 .then(response => response.json())
                 .then(data => {
-                    const dataContainer = document.getElementById('data-container');
+                    const dataContainer = document.getElementById('data-container-' + id);
                     dataContainer.textContent = JSON.stringify(data);
                     console.log('Dados atualizados:', data.running);
                 })
-                .catch(error => console.error('Erro ao obter dados da API:', error));
         }
 
-        fetchData();
-        setInterval(fetchData, 60000); // 60000 ms = 1 minuto
+        fetchData('localhost', 1);
+        fetchData('192.168.100.123', 2);
+        fetchData('192.168.100.105', 3);
+        fetchData('192.168.100.174', 4);
+
+        setInterval(() => {
+            fetchData('localhost', 1);
+            fetchData('192.168.100.123', 2);
+            fetchData('192.168.100.105', 3);
+            fetchData('192.168.100.174', 4);
+        }, 60000); // 60000 ms = 1 minuto
 
     </script>
 </body>
