@@ -375,6 +375,11 @@ func keysHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Permitir solicitações de qualquer origem
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
 	// Encode and send JSON response
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)

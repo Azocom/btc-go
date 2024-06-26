@@ -1,13 +1,68 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leitura periódica de JSON API</title>
+    <title>Monitoramento</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
 </head>
 
 <body>
+
+    <div class="container2">
+
+
+        <div class="col-xs-3">
+            <br>
+            <div class="panel panel-default" id="panel-1">
+                <div class="panel-heading"><a href="http://localhost:8090">Miner Local</a></div>
+                <div class="panel-body">
+                    <div id="data-miner-1"></div>
+                    <div id="key-1"></div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="col-xs-3">
+            <br>
+            <div class="panel panel-default" id="panel-2">
+                <div class="panel-heading"><a href="http://192.168.100.123:8090">Miner Note</a></div>
+                <div class="panel-body">
+                    <div id="data-miner-2"></div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="col-xs-3">
+            <br>
+            <div class="panel panel-default" id="panel-3">
+                <div class="panel-heading">
+                    <a href="http://192.168.100.105:8090">Miner BOX</a>
+                </div>
+                <div class="panel-body">
+                    <div id="data-miner-3"></div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="col-xs-3">
+            <br>
+            <div class="panel panel-default" id="panel-4">
+                <div class="panel-heading"><a href="http://192.168.100.174:8090">Miner SeV</a></div>
+                <div class="panel-body">
+                    <div id="data-miner-4"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <!-- 
 
     1<div id="data-container-1"></div>
     <hr>
@@ -15,7 +70,7 @@
     <hr>
     3<div id="data-container-3"></div>
     <hr>
-    4<div id="data-container-4"></div>
+    4<div id="data-container-4"></div> -->
 
     <script>
 
@@ -24,13 +79,34 @@
             fetch('http://' + ip + ':8090/status')
                 .then(response => response.json())
                 .then(data => {
-                    const dataContainer = document.getElementById('data-container-' + id);
-                    dataContainer.textContent = JSON.stringify(data);
-                    console.log('Dados atualizados:', data.running);
+
+                    // const dataContainer = document.getElementById('data-container-' + id);
+                    // dataContainer.textContent = JSON.stringify(data);
+
+                    document.getElementById('panel-' + id).className = data.running ? 'panel-success' : 'panel-danger';
+
+                    document.getElementById('data-miner-' + id).innerHTML += data.rangeMin + '<br>' + data.rangeMax + '<br>' + new Intl.NumberFormat().format(data.keysChecked);
+
+                });
+            // fetchDataKey(ip, id);
+        }
+
+        function fetchDataKey(ip, id) {
+            fetch('http://' + ip + ':8090/keys')
+                .then(response => response.json())
+                .then(data => {
+
+                    // const dataContainer = document.getElementById('data-container-' + id);
+                    // dataContainer.textContent = JSON.stringify(data);
+
+                    document.getElementById('keys-' + id).className = data.running ? 'panel-success' : 'panel-danger';
+
                 })
         }
 
+
         fetchData('localhost', 1);
+
         fetchData('192.168.100.123', 2);
         fetchData('192.168.100.105', 3);
         fetchData('192.168.100.174', 4);
