@@ -29,3 +29,5 @@ Se liga no esquema pra rodar o bagulho:
   `./btcgo`
 
 Aí é só seguir o baile, parceiro.
+
+btcgo.exe pc001 oz48ClzUT2oq4xL6

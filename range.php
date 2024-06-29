@@ -18,7 +18,7 @@ $concluidoID = (int)$_GET['close_id'];
 $dataAgora = date('Y-m-d H:i:s');
 
 if (
-        $password != '1E6NuFjCi27W5zoXg8TRdcSRq84zJeBW3k'
+        $password != 'oz48ClzUT2oq4xL6'
 ) {
         throw new \Exception("US-Erro");
 }
