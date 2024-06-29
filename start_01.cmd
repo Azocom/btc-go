@@ -1,0 +1,1 @@
+btcgoMetade.exe pc002 oz48ClzUT2oq4xL6

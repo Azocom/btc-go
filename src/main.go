@@ -107,7 +107,7 @@ func main() {
 	startTime = time.Now()
 
 	// Number of CPU cores to use
-	numCPU = runtime.NumCPU() / 2
+	numCPU = runtime.NumCPU() 
 	fmt.Printf("CPUs detectados: %s\n", green(numCPU))
 	runtime.GOMAXPROCS(numCPU * 2)
 
