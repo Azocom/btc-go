@@ -65,7 +65,6 @@ func LoadRanges(filename string) (*Ranges, error) {
 	return &ranges, nil
 }
 
-// loadWallets loads wallet addresses from a JSON file
 func LoadWallets(filename string) (*Wallets, error) {
 	file, err := os.Open(filename)
 	if err != nil {

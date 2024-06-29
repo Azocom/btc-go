@@ -112,6 +112,10 @@
         fetchData('192.168.100.174', 4);
 
         setInterval(() => {
+            document.getElementById('data-miner-1').innerHTML = "";
+            document.getElementById('data-miner-2').innerHTML = "";
+            document.getElementById('data-miner-3').innerHTML = "";
+            document.getElementById('data-miner-4').innerHTML = "";
             fetchData('localhost', 1);
             fetchData('192.168.100.123', 2);
             fetchData('192.168.100.105', 3);
