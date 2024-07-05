@@ -142,6 +142,7 @@ func main() {
 	// Start the web server
 	http.HandleFunc("/", webHandler)
 	http.HandleFunc("/start", startHandler)
+	http.HandleFunc("/resume", resumeHandler)
 	http.HandleFunc("/stop", stopHandler)
 	http.HandleFunc("/status", statusHandler)
 	http.HandleFunc("/keys", keysHandler) // New route for keys
@@ -198,6 +199,34 @@ func startHandler(w http.ResponseWriter, r *http.Request) {
 	go startProcessing(privid, privKeyMin, privKeyMax)
 
 	fmt.Fprintln(w, "Processing started")
+}
+
+
+func resumeHandler(w http.ResponseWriter, r *http.Request) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	if running {
+		http.Error(w, "Process already running", http.StatusBadRequest)
+		return
+	}
+
+	id := new(big.Int)
+	privKeyMin := new(big.Int)
+	privKeyMax := new(big.Int)
+	id.SetString(idStr, 16)
+	privKeyMin.SetString(privKeyMinStr, 16)
+	privKeyMax.SetString(privKeyMaxStr, 16)
+
+	if privKeyMin.Cmp(privKeyMax) >= 0 {
+		http.Error(w, "Invalid range values: min should be less than max", http.StatusBadRequest)
+		return
+	}
+
+	go startProcessing(id, privKeyMin, privKeyMax)
+
+	fmt.Fprintln(w, "Processing resumed")
+	saveCurrentState() // Save state when stopping
 }
 
 func stopHandler(w http.ResponseWriter, r *http.Request) {
