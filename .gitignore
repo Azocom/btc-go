@@ -21,6 +21,7 @@ vendor/
 
 # Ignore go build output
 bin/
+data/state.json
 
 # Ignore the executable
 btcgo
