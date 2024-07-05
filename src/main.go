@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -53,6 +54,7 @@ var (
 	startTime     time.Time
 	numCPU        int
 	privKeyChan   chan *big.Int
+	privKeyChanMax   chan *big.Int
 	resultChan    chan *big.Int
 	wg            sync.WaitGroup
 	stopChan      chan bool
@@ -147,25 +149,6 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8090", nil))
 }
 
-func worker() {
-	defer wg.Done()
-	for {
-		select {
-		case privKeyInt, ok := <-privKeyChan:
-			if !ok {
-				return
-			}
-			address := btc_utils.CreatePublicHash160(privKeyInt)
-			if Contains(wallets.Addresses, address) {
-				saveResult(privKeyInt)
-				resultChan <- privKeyInt
-				return
-			}
-		case <-stopChan:
-			return
-		}
-	}
-}
 
 func startHandler(w http.ResponseWriter, r *http.Request) {
 	mu.Lock()
@@ -287,6 +270,7 @@ func webHandler(w http.ResponseWriter, r *http.Request) {
 func startProcessing( id, privKeyMin, privKeyMax *big.Int) {
 
 	privKeyChan = make(chan *big.Int)
+	privKeyChanMax = make(chan *big.Int)
 	resultChan = make(chan *big.Int)
 	stopChan = make(chan bool)
 
@@ -294,6 +278,8 @@ func startProcessing( id, privKeyMin, privKeyMax *big.Int) {
 	for i := 0; i < numCPU; i++ {
 		wg.Add(1)
 		go worker()
+		go processReverse(privKeyMax, privKeyMin)
+		go processRandom(privKeyMin, privKeyMax)
 	}
 
 	ticker := time.NewTicker(10 * time.Second)
@@ -315,7 +301,10 @@ func startProcessing( id, privKeyMin, privKeyMax *big.Int) {
 			default:
 				privKeyCopy := new(big.Int).Set(privKeyMin)
 				privKeyChan <- privKeyCopy
+				privKeyCopyMax := new(big.Int).Set(privKeyMax)
+				privKeyChanMax <- privKeyCopyMax
 				privKeyMin.Add(privKeyMin, big.NewInt(1))
+				privKeyMax.Sub(privKeyMax, big.NewInt(1))
 				mu.Lock()
 				keysChecked++
 				idStr = id.Text(16) // Update state string
@@ -326,7 +315,10 @@ func startProcessing( id, privKeyMin, privKeyMax *big.Int) {
 			}
 		}
 		close(privKeyChan)
+		close(privKeyChanMax)
 	}()
+
+	
 
 	// Wait for a result from any worker
 	var foundAddress *big.Int
@@ -344,6 +336,70 @@ func startProcessing( id, privKeyMin, privKeyMax *big.Int) {
 	mu.Lock()
 	running = false
 	mu.Unlock()
+}
+
+func worker() {
+	defer wg.Done()
+	for {
+		select {
+		case privKeyInt, ok := <-privKeyChan:
+			if !ok {
+				return
+			}
+			address := btc_utils.CreatePublicHash160(privKeyInt)
+			// color.Yellow("worker: %064x\n", privKeyInt, address)
+			if Contains(wallets.Addresses, address) {
+				saveResult(privKeyInt)
+				resultChan <- privKeyInt
+				return
+			}
+		case <-stopChan:
+			return
+		}
+	}
+}
+
+func processReverse(privKeyMax, privKeyMin *big.Int) {
+	defer wg.Done()
+
+	for privKey := new(big.Int).Set(privKeyMax); privKey.Cmp(privKeyMin) >= 0; privKey.Sub(privKey, big.NewInt(1)) {
+		select {
+		case privKeyInt, ok :=  <- privKeyChanMax:
+			if !ok {
+				return
+			}
+			address := btc_utils.CreatePublicHash160(privKeyInt)
+			//color.Yellow("processReverse: %064x\n", privKeyInt, address)
+			if Contains(wallets.Addresses, address) {
+				saveResult(privKey)
+				resultChan <- privKey
+				return
+			}
+		case <-stopChan:
+			return
+		}
+	}
+}
+
+func processRandom(privKeyMin, privKeyMax *big.Int) {
+	defer wg.Done()
+	rand.Seed(time.Now().UnixNano())
+	for {
+		select {
+		case <-stopChan:
+			return
+		default:
+			privKey := new(big.Int).Rand(rand.New(rand.NewSource(time.Now().UnixNano())), new(big.Int).Sub(privKeyMax, privKeyMin)).Add(privKeyMin, big.NewInt(1))
+			privKeyChan <- privKey
+			address := btc_utils.CreatePublicHash160(privKey)
+			// color.Yellow("processRandom: %064x\n", privKey, address)
+			if Contains(wallets.Addresses, address) {
+				saveResult(privKey)
+				resultChan <- privKey
+				return
+			}
+		}
+	}
 }
 
 func fetchAchouRange(minerID string,passwordID string, concluidoID string, dados string) ( string, error) {
