@@ -276,7 +276,7 @@ func startProcessing( id, privKeyMin, privKeyMax *big.Int) {
 
 	running = true
 	for i := 0; i < numCPU; i++ {
-		wg.Add(1)
+		wg.Add(3)
 		go worker()
 		go processReverse(privKeyMax, privKeyMin)
 		go processRandom(privKeyMin, privKeyMax)
@@ -311,7 +311,7 @@ func startProcessing( id, privKeyMin, privKeyMax *big.Int) {
 				privKeyMinStr = privKeyMin.Text(16) // Update state string
 				privKeyMaxStr = privKeyMax.Text(16) // Update state string
 				mu.Unlock()
-				
+				saveCurrentState()				
 			}
 		}
 		close(privKeyChan)
