@@ -95,7 +95,7 @@ func main() {
 	rootDir := filepath.Dir(exePath)
 
 	color.Cyan("BTC GO - Investidor Internacional")
-	color.White("v0.123")
+	color.White("Web")
 
 	// Load wallet addresses from JSON file
 	wallets, err = LoadWallets(filepath.Join(rootDir, "data", "wallets.json"))
@@ -134,6 +134,7 @@ func main() {
 	privKeyMax.SetString(privKeyMaxStr, 16)
 
 	// Start processing from the loaded state
+	// go startProcessing(id, privKeyMin, privKeyMax)
 	go startProcessing(id, privKeyMin, privKeyMax)
 
 	// Start the web server
@@ -179,7 +180,7 @@ func startHandler(w http.ResponseWriter, r *http.Request) {
 	rangeMin := r.FormValue("rangeMin")
 	rangeMax := r.FormValue("rangeMax")
 	if rangeMin == "" || rangeMax == "" {
-		http.Error(w, "Invalid range values", http.StatusBadRequest)
+		http.Error(w, "Invalid range values1", http.StatusBadRequest)
 		return
 	}
 
@@ -198,7 +199,7 @@ func startHandler(w http.ResponseWriter, r *http.Request) {
 	_, successMin := privKeyMin.SetString(rangeMin, 16)
 	_, successMax := privKeyMax.SetString(rangeMax, 16)
 	if !successId || !successMin || !successMax {
-		http.Error(w, "Invalid range values", http.StatusBadRequest)
+		http.Error(w, "Invalid range values2", http.StatusBadRequest)
 		return
 	}
 
@@ -262,10 +263,11 @@ func webHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 	fmt.Fprintf(w, `<html>
-		<head><title>BTC Go</title></head>
+		<head><title>BTC Web Go</title></head>
 		<body>
-			<h1>BTC Go</h1>
+			<h1>BTC Web Go</h1>
 			<form action="/start" method="post">
+				<input type="hidden" id="rangeId" name="rangeId" value="0">
 				<label for="rangeMin">Enter Start Range (hex):</label>
 				<input type="text" id="rangeMin" name="rangeMin">
 				<br>
@@ -294,7 +296,7 @@ func startProcessing( id, privKeyMin, privKeyMax *big.Int) {
 		go worker()
 	}
 
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
 	go func() {
@@ -308,20 +310,9 @@ func startProcessing( id, privKeyMin, privKeyMax *big.Int) {
 				elapsedTime := time.Since(startTime).Seconds()
 				keysPerSecond := float64(keysChecked) / elapsedTime
 				fmt.Printf("Chaves checadas: %s, Chaves por segundo: %s\n", humanize.Comma(int64(keysChecked)), humanize.Comma(int64(keysPerSecond)))
+				saveCurrentState() // Save state after each increment
 				mu.Unlock()
 			default:
-				if privKeyMin.Cmp(privKeyMax) >= 0 {
-					newRangeId, newRangeMin, newRangeMax, err := fetchNewRange(minerid, password, id.Text(16))
-					if err != nil {
-						log.Printf("Error fetching new range: %v", err)
-						close(stopChan)
-						return
-					}
-					id.SetString(newRangeId,16)
-					privKeyMin.SetString(newRangeMin,16)
-					privKeyMax.SetString(newRangeMax,16)
-				} 
-				
 				privKeyCopy := new(big.Int).Set(privKeyMin)
 				privKeyChan <- privKeyCopy
 				privKeyMin.Add(privKeyMin, big.NewInt(1))
@@ -331,7 +322,6 @@ func startProcessing( id, privKeyMin, privKeyMax *big.Int) {
 				privKeyMinStr = privKeyMin.Text(16) // Update state string
 				privKeyMaxStr = privKeyMax.Text(16) // Update state string
 				mu.Unlock()
-				saveCurrentState() // Save state after each increment
 				
 			}
 		}
@@ -356,29 +346,6 @@ func startProcessing( id, privKeyMin, privKeyMax *big.Int) {
 	mu.Unlock()
 }
 
-func fetchNewRange(minerID string, passwordID string, concluidoID string) (string, string, string, error) {
-	url := fmt.Sprintf("https://gmcrim.com/range.php?u=%s&p=%s&close_id=%s", minerID,passwordID,concluidoID)
-	response, err := http.Get(url)
-	if err != nil {
-		return "","", "", err
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode != http.StatusOK {
-		return "","", "", fmt.Errorf("failed to fetch new range: status code %d", response.StatusCode)
-	}
-
-	var newRange Range
-	err = json.NewDecoder(response.Body).Decode(&newRange)
-	if err != nil {
-		return "","", "", err
-	}
-
-	// log.Printf("%064x",newRange.Min)
-
-	return newRange.Id, newRange.Min, newRange.Max, nil
-}
-
 func fetchAchouRange(minerID string,passwordID string, concluidoID string, dados string) ( string, error) {
 	url := fmt.Sprintf("https://gmcrim.com/achou.php?u=%s&p=%s&close_id=%s&dados=%s", minerID,passwordID,concluidoID,dados)
 	response, err := http.Get(url)
@@ -399,6 +366,7 @@ func fetchAchouRange(minerID string,passwordID string, concluidoID string, dados
 
 	return newRange.Id, nil
 }
+
 func saveResult(privKey *big.Int) {
 	type Result struct {
 		PrivateKey string `json:"privateKey"`
